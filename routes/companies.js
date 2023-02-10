@@ -8,13 +8,11 @@ const express = require("express");
 const { BadRequestError } = require("../expressError");
 const { ensureAdmin } = require("../middleware/auth");
 const Company = require("../models/company");
-
-const companyNewSchema = require("../schemas/companyNew.json");
+const { validateCompanyCreation } = require("../middleware/companies");
 const companyUpdateSchema = require("../schemas/companyUpdate.json");
 const companySearchSchema = require("../schemas/companySearch.json");
 
 const router = new express.Router();
-
 
 /** POST / { company } =>  { company }
  *
@@ -25,20 +23,18 @@ const router = new express.Router();
  * Authorization required: admin
  */
 
-router.post("/", ensureAdmin, async function (req, res, next) {
-  try {
-    const validator = jsonschema.validate(req.body, companyNewSchema);
-    if (!validator.valid) {
-      const errs = validator.errors.map(e => e.stack);
-      throw new BadRequestError(errs);
+router.post(
+  "/",
+  ensureAdmin,
+  validateCompanyCreation,
+  async function (req, res, next) {
+    const creationResult = await Company.create(req.body);
+    if (creationResult.outcome === "created") {
+      return res.status(201).json({ company: creationResult.company });
     }
-
-    const company = await Company.create(req.body);
-    return res.status(201).json({ company });
-  } catch (err) {
-    return next(err);
+    return res.status(400).json(creationResult);
   }
-});
+);
 
 /** GET /  =>
  *   { companies: [ { handle, name, description, numEmployees, logoUrl }, ...] }
@@ -60,7 +56,7 @@ router.get("/", async function (req, res, next) {
   try {
     const validator = jsonschema.validate(q, companySearchSchema);
     if (!validator.valid) {
-      const errs = validator.errors.map(e => e.stack);
+      const errs = validator.errors.map((e) => e.stack);
       throw new BadRequestError(errs);
     }
 
@@ -103,7 +99,7 @@ router.patch("/:handle", ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, companyUpdateSchema);
     if (!validator.valid) {
-      const errs = validator.errors.map(e => e.stack);
+      const errs = validator.errors.map((e) => e.stack);
       throw new BadRequestError(errs);
     }
 
@@ -127,6 +123,5 @@ router.delete("/:handle", ensureAdmin, async function (req, res, next) {
     return next(err);
   }
 });
-
 
 module.exports = router;
