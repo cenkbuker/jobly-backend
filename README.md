@@ -28,19 +28,13 @@ Once you have Node.js and PostgreSQL installed, follow these steps to set up the
 
     -   Create a `.env` file in the root of the project with the following content:
 
-        arduinoCopy code
-
         `DATABASE_URL=postgresql://localhost/jobly`
 
     -   Run the database migrations:
 
-        Copy code
-
         `npx knex migrate:latest`
 
     -   Seed the database with test data:
-
-        arduinoCopy code
 
         `npx knex seed:run`
 
